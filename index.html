@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mental Well-Being Tracker</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #ffffff;
+      color: #000000;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px 40px;
+      background-color: #ffffff;
+      border-bottom: 1px solid #414141;
+    }
+
+    .header img {
+      height: 50px;
+    }
+
+    .container {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 100px);
+    }
+
+    .left {
+      width: 40%;
+      height: 100%;
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .left video {
+      height: 100%;
+      width: auto;
+      aspect-ratio: 9 / 16;
+      object-fit: cover;
+      pointer-events: none;
+    }
+
+    .right {
+      width: 50%;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .form-screen input,
+    .form-screen select {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    .form-screen button {
+      background-color: #3F0E54;
+      color: white;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .question-count {
+      color: #3F0E54;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .question-text {
+      font-size: 2rem;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
+    .options button {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      background: white;
+      margin-bottom: 12px;
+      text-align: left;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      transition: background 0.3s ease;
+    }
+
+    .options button.selected {
+      background-color: #CDB5D7;
+    }
+
+    .options button:hover {
+      background-color: #CDB5D7;
+    }
+
+    .next-btn {
+      background-color: #3F0E54;
+      color: white;
+      padding: 14px 28px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .next-btn:disabled {
+      background-color: #ddd;
+      cursor: not-allowed;
+    }
+    @media (max-width:800px) {
+      .left {
+    display: none; 
+  }
+
+  .right {
+    width: 80%;
+    padding: 30px 20px;
+    margin: 0 auto;
+    align-items: center;
+    text-align: center;
+  }
+
+  .form-screen h2,
+  .question-text {
+    font-size: 2rem; 
+  }
+
+  .form-screen input,
+  .form-screen select,
+  .form-screen button,
+  .options button,
+  .next-btn {
+    font-size: 1.2rem; 
+  }
+
+  .question-count {
+    font-size: 1.2rem;
+  }
+
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="./scene_logo-black_color.png" alt="Scene Company Logo" />
+  </div>
+
+  <div class="container">
+    <div class="left">
+      <video src="vid.mov" autoplay muted loop></video>
+    </div>
+
+    <div class="right">
+      <div class="form-screen" id="form-screen">
+        <h2 style="margin-bottom: 20px; font-size: 2.5rem;">Before we begin...</h2>
+        <input type="text" id="name" placeholder="Your Name" required />
+        <select id="gender">
+          <option value="">Select Gender</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+          <option value="Prefer not to say">Prefer not to say</option>
+        </select>
+        <input type="email" id="email" placeholder="Your Email" required />
+        <button onclick="startSurvey()">Start Survey</button>
+        <div id="form-error" style="color: red; margin-top: 10px;"></div>
+      </div>
+
+      <div id="questionnaire" style="display:none;">
+        <div class="question-count" id="question-count">Question 1/10</div>
+        <div class="question-text" id="question-text"></div>
+        <div class="options" id="options"></div>
+        <button class="next-btn" id="next-btn" disabled>Next →</button>
+      </div>
+      
+      <div id="thank-you" style="display:none; text-align:center;">
+        <h2 style="font-size: 2.5rem; margin-bottom: 20px;">🎉 Thank you for completing the survey!</h2>
+        <p>Your responses have been recorded.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        text: "🎯 What kind of activities would you love to attend?",
+        options: ["🎨 Art Workshop", "💪 Fitness and self care", "🧗‍♀️ Adventure", "🎲 Recreational"]
+      },
+      {
+        text: "🧍 Who do you usually attend experiences with?",
+        options: ["👤 Just me (solo explorer)", "👯 One friend / partner", "👨‍👩‍👧 Small group", "🌍 Open to meeting new people"]
+      },
+      {
+        text: "🏞️ What type of space do you enjoy most?",
+        options: ["🪟 Indoor, cozy studios", "🌳 Outdoor, nature-filled spots", "☕ Café / Lounge settings", "🎡 Doesn't matter – I love variety"]
+      },
+      {
+        text: "🕐 When do you usually prefer attending experiences?",
+        options: ["🌅 Weekday mornings or afternoons", "🌆 Weekday evenings", "🌄 Weekend mornings", "🌃 Weekend evenings"]
+      },
+      {
+        text: "🧠 What's your main reason for attending an experience?",
+        options: ["🧘‍♀️ To relax or unwind", "🎨 To explore creativity", "🗣️ To meet new people", "📚 To learn something new"]
+      },
+      {
+        text: "🎛️ How do you like your sessions?",
+        options: ["🧑‍🏫 Fully guided, start to end", "🧭 Lightly guided with freedom", "🎨 Freestyle / Open-ended", "🎲 Depends on the type of session"]
+      },
+      {
+        text: "📣 How do you usually hear about such experiences?",
+        options: ["📱 Instagram or other social media", "🗣️ Friends or word of mouth", "🌐 SceneBooking website", "🧾 Event platforms (Insider, Paytm, etc.)"]
+      },
+      {
+        text: "📅 How often would you ideally like to attend?",
+        options: ["📅 Weekly", "📆 Twice a month", "🗓️ Once a month", "🎉 Occasionally (special days)"]
+      },
+      {
+        text: "💰 What's your comfortable price range per session?",
+        options: ["💸 Upto ₹500", "💵 ₹500–₹1000", "💳 ₹1000–₹2000", "💎 ₹2000 above ☝️"]
+      },
+      {
+        text: "🔔 Would you like us to suggest experiences just for you?",
+        options: ["✅ Yes, please", "⏳ Maybe later", "❌ No, thanks", "🎁 Only if there's something exciting"]
+      }
+    ];
+
+    let currentQuestion = 0;
+    let userResponses = {};
+
+    // DOM elements
+    const questionText = document.getElementById('question-text');
+    const optionsContainer = document.getElementById('options');
+    const nextBtn = document.getElementById('next-btn');
+    const questionCount = document.getElementById('question-count');
+
+    function loadQuestion() {
+      const q = questions[currentQuestion];
+      questionCount.innerText = `Question ${currentQuestion + 1}/${questions.length}`;
+      questionText.innerText = q.text;
+      optionsContainer.innerHTML = '';
+      nextBtn.disabled = true;
+
+      q.options.forEach(option => {
+        const btn = document.createElement('button');
+        btn.innerText = option;
+        btn.onclick = () => {
+          document.querySelectorAll('.options button').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          nextBtn.disabled = false;
+          userResponses[`Q${currentQuestion + 1}`] = option;
+        };
+        optionsContainer.appendChild(btn);
+      });
+    }
+
+    nextBtn.onclick = () => {
+      if (currentQuestion < questions.length - 1) {
+        currentQuestion++;
+        loadQuestion();
+      } else {
+        submitToGoogleSheets();
+      }
+    };
+
+    function startSurvey() {
+      const name = document.getElementById('name').value.trim();
+      const gender = document.getElementById('gender').value;
+      const email = document.getElementById('email').value.trim();
+      const errorDiv = document.getElementById('form-error');
+
+      if (!name || !gender || !email) {
+        errorDiv.textContent = "All fields are required.";
+        return;
+      }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errorDiv.textContent = "Please enter a valid email.";
+        return;
+      }
+
+      userResponses = {
+        Timestamp: new Date().toLocaleString(),
+        Name: name,
+        Gender: gender,
+        Email: email
+      };
+
+      document.getElementById('form-screen').style.display = 'none';
+      document.getElementById('questionnaire').style.display = 'block';
+      loadQuestion();
+    }
+
+    async function submitToGoogleSheets() {
+      document.getElementById('questionnaire').style.display = 'none';
+      const thankYouDiv = document.getElementById('thank-you');
+      
+      try {
+        // Add all question responses to userResponses
+        for (let i = 0; i < questions.length; i++) {
+          const qKey = `Q${i+1}`;
+          if (!userResponses[qKey]) userResponses[qKey] = '';
+        }
+
+        // Convert to URL-encoded form data
+        const formData = new URLSearchParams();
+        for (const key in userResponses) {
+          formData.append(key, userResponses[key]);
+        }
+
+        // IMPORTANT: Replace with your actual deployment URL
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbyLcCRLhpnUjl1omUYTXWO_Y4vtBXkpDGgrWp9-dX6LLko0rK8gcE-LLT7y97CLnY5n/exec';
+        
+        const response = await fetch(scriptURL, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        thankYouDiv.innerHTML = `
+          <h2>🎉 Thank you for completing the survey!</h2>
+          <p>Your responses have been successfully recorded.</p>
+        `;
+      } catch (error) {
+        console.error('Submission error:', error);
+        thankYouDiv.innerHTML = `
+          <h2>Thank you!</h2>
+          <p>Your responses were recorded locally.</p>
+          <p><small>(We encountered a server issue but saved your data.)</small></p>
+        `;
+        // Fallback: Store in localStorage
+        localStorage.setItem('surveyBackup', JSON.stringify(userResponses));
+      } finally {
+        thankYouDiv.style.display = 'block';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -132,36 +132,36 @@
       background-color: #ddd;
       cursor: not-allowed;
     }
+
     @media (max-width:800px) {
       .left {
-    display: none; 
-  }
+        display: none; 
+      }
 
-  .right {
-    width: 80%;
-    padding: 30px 20px;
-    margin: 0 auto;
-    align-items: center;
-    text-align: center;
-  }
+      .right {
+        width: 80%;
+        padding: 30px 20px;
+        margin: 0 auto;
+        align-items: center;
+        text-align: center;
+      }
 
-  .form-screen h2,
-  .question-text {
-    font-size: 2rem; 
-  }
+      .form-screen h2,
+      .question-text {
+        font-size: 2rem; 
+      }
 
-  .form-screen input,
-  .form-screen select,
-  .form-screen button,
-  .options button,
-  .next-btn {
-    font-size: 1.2rem; 
-  }
+      .form-screen input,
+      .form-screen select,
+      .form-screen button,
+      .options button,
+      .next-btn {
+        font-size: 1.2rem; 
+      }
 
-  .question-count {
-    font-size: 1.2rem;
-  }
-
+      .question-count {
+        font-size: 1.2rem;
+      }
     }
   </style>
 </head>
@@ -199,8 +199,9 @@
       </div>
       
       <div id="thank-you" style="display:none; text-align:center;">
-        <h2 style="font-size: 2.5rem; margin-bottom: 20px;">🎉 Thank you for completing the survey!</h2>
-        <p>Your responses have been recorded.</p>
+        <img src="https://media2.giphy.com/media/3XHMTIqcUev2Vy9ILk/giphy.webp" alt="Success" style="width: 220px; margin-bottom: 20px;" />
+        <h2 style="font-size: 2rem; color: #3F0E54;">🎉 Your responses were submitted successfully!</h2>
+        <p style="font-size: 1.1rem;">Thank you for sharing your preferences. We’ll use them to curate great experiences just for you.</p>
       </div>
     </div>
   </div>
@@ -252,7 +253,6 @@
     let currentQuestion = 0;
     let userResponses = {};
 
-    // DOM elements
     const questionText = document.getElementById('question-text');
     const optionsContainer = document.getElementById('options');
     const nextBtn = document.getElementById('next-btn');
@@ -265,14 +265,21 @@
       optionsContainer.innerHTML = '';
       nextBtn.disabled = true;
 
+      const selectedOptions = new Set();
+
       q.options.forEach(option => {
         const btn = document.createElement('button');
         btn.innerText = option;
         btn.onclick = () => {
-          document.querySelectorAll('.options button').forEach(b => b.classList.remove('selected'));
-          btn.classList.add('selected');
-          nextBtn.disabled = false;
-          userResponses[`Q${currentQuestion + 1}`] = option;
+          btn.classList.toggle('selected');
+          if (selectedOptions.has(option)) {
+            selectedOptions.delete(option);
+          } else {
+            selectedOptions.add(option);
+          }
+
+          nextBtn.disabled = selectedOptions.size === 0;
+          userResponses[`Q${currentQuestion + 1}`] = Array.from(selectedOptions);
         };
         optionsContainer.appendChild(btn);
       });
@@ -318,21 +325,20 @@
     async function submitToGoogleSheets() {
       document.getElementById('questionnaire').style.display = 'none';
       const thankYouDiv = document.getElementById('thank-you');
-      
+
       try {
-        // Add all question responses to userResponses
         for (let i = 0; i < questions.length; i++) {
           const qKey = `Q${i+1}`;
-          if (!userResponses[qKey]) userResponses[qKey] = '';
+          if (!userResponses[qKey]) userResponses[qKey] = [];
         }
 
-        // Convert to URL-encoded form data
         const formData = new URLSearchParams();
         for (const key in userResponses) {
-          formData.append(key, userResponses[key]);
+          let value = userResponses[key];
+          if (Array.isArray(value)) value = value.join(', ');
+          formData.append(key, value);
         }
 
-        // IMPORTANT: Replace with your actual deployment URL
         const scriptURL = 'https://script.google.com/macros/s/AKfycbyLcCRLhpnUjl1omUYTXWO_Y4vtBXkpDGgrWp9-dX6LLko0rK8gcE-LLT7y97CLnY5n/exec';
         
         const response = await fetch(scriptURL, {
@@ -341,19 +347,8 @@
         });
 
         if (!response.ok) throw new Error('Network response was not ok');
-        
-        thankYouDiv.innerHTML = `
-          <h2>🎉 Thank you for completing the survey!</h2>
-          <p>Your responses have been successfully recorded.</p>
-        `;
       } catch (error) {
         console.error('Submission error:', error);
-        thankYouDiv.innerHTML = `
-          <h2>Thank you!</h2>
-          <p>Your responses were recorded locally.</p>
-          <p><small>(We encountered a server issue but saved your data.)</small></p>
-        `;
-        // Fallback: Store in localStorage
         localStorage.setItem('surveyBackup', JSON.stringify(userResponses));
       } finally {
         thankYouDiv.style.display = 'block';
